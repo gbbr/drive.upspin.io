@@ -11,7 +11,7 @@ import (
 	"upspin.io/cloud/https"
 	"upspin.io/serverutil/upspinserver"
 
-	// Storage on Dropbox.
+	// Storage on Google Drive.
 	_ "drive.upspin.io/cloud/storage/drive"
 )
 
