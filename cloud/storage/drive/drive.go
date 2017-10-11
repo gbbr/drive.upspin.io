@@ -111,8 +111,9 @@ func (d *driveImpl) Put(ref string, contents []byte) error {
 		return errors.E(op, errors.IO, err)
 	}
 	if id != "" {
-		// if it does, delete it to ensure uniquness because Google Drive allows
-		// multiple files with the same name to coexist in the same folder
+		// if it does, delete it to ensure uniqueness because Google Drive allows
+		// multiple files with the same name to coexist in the same folder. See:
+		// https://developers.google.com/drive/v3/reference/files#properties
 		if err := d.Delete(id); err != nil {
 			return err
 		}
