@@ -84,7 +84,7 @@ func (d *driveImpl) LinkBase() (string, error) {
 
 func (d *driveImpl) Download(ref string) ([]byte, error) {
 	const op = "cloud/storage/drive.Download"
-	id, err := d.id(ref)
+	id, err := d.fileId(ref)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, errors.E(op, errors.NotExist, err)
@@ -106,13 +106,13 @@ func (d *driveImpl) Download(ref string) ([]byte, error) {
 func (d *driveImpl) Put(ref string, contents []byte) error {
 	const op = "cloud/storage/drive.Put"
 	// check if file already exists
-	id, err := d.id(ref)
+	id, err := d.fileId(ref)
 	if err != nil && !os.IsNotExist(err) {
 		return errors.E(op, errors.IO, err)
 	}
 	if id != "" {
-		// if it does, delete it because Google Drive allows multiple files
-		// with the same name to coexist in the same folder
+		// if it does, delete it to ensure uniquness because Google Drive allows
+		// multiple files with the same name to coexist in the same folder
 		if err := d.Delete(id); err != nil {
 			return err
 		}
@@ -131,7 +131,7 @@ func (d *driveImpl) Put(ref string, contents []byte) error {
 
 func (d *driveImpl) Delete(ref string) error {
 	const op = "cloud/storage/drive.Download"
-	id, err := d.id(ref)
+	id, err := d.fileId(ref)
 	if err != nil {
 		if os.IsNotExist(err) {
 			// nothing to delete
@@ -146,8 +146,8 @@ func (d *driveImpl) Delete(ref string) error {
 	return nil
 }
 
-// id returns the file ID of the first file found under the given name.
-func (d *driveImpl) id(name string) (string, error) {
+// fileId returns the file ID of the first file found under the given name.
+func (d *driveImpl) fileId(name string) (string, error) {
 	// try cache first
 	if id, ok := d.cache.Get(name); ok {
 		return id.(string), nil
@@ -159,7 +159,7 @@ func (d *driveImpl) id(name string) (string, error) {
 		return "", err
 	}
 	if len(r.Files) == 0 {
-		return "", &os.PathError{Op: "List", Path: name, Err: os.ErrNotExist}
+		return "", os.ErrNotExist
 	}
 	// In Drive it is possible that multiple files share the same name under distinct
 	// IDs. It is the responsibility of the Storage user to assure that this collision
