@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"time"
 
 	"drive.upspin.io/config"
@@ -85,7 +86,10 @@ func (d *driveImpl) Download(ref string) ([]byte, error) {
 	const op = "cloud/storage/drive.Download"
 	id, err := d.id(ref)
 	if err != nil {
-		return nil, err
+		if os.IsNotExist(err) {
+			return nil, errors.E(op, errors.NotExist, err)
+		}
+		return nil, errors.E(op, errors.IO, err)
 	}
 	resp, err := d.files.Get(id).Download()
 	if err != nil {
@@ -101,14 +105,24 @@ func (d *driveImpl) Download(ref string) ([]byte, error) {
 
 func (d *driveImpl) Put(ref string, contents []byte) error {
 	const op = "cloud/storage/drive.Put"
-
+	// check if file already exists
+	id, err := d.id(ref)
+	if err != nil && !os.IsNotExist(err) {
+		return errors.E(op, errors.IO, err)
+	}
+	if id != "" {
+		// if it does, delete it because Google Drive allows multiple files
+		// with the same name to coexist in the same folder
+		if err := d.Delete(id); err != nil {
+			return err
+		}
+	}
 	call := d.files.Create(&drive.File{
 		Name:    ref,
 		Parents: []string{"appDataFolder"},
 	})
-
 	contentType := googleapi.ContentType("application/octet-stream")
-	_, err := call.Media(bytes.NewReader(contents), contentType).Do()
+	_, err = call.Media(bytes.NewReader(contents), contentType).Do()
 	if err != nil {
 		return errors.E(op, errors.IO, err)
 	}
@@ -119,18 +133,22 @@ func (d *driveImpl) Delete(ref string) error {
 	const op = "cloud/storage/drive.Download"
 	id, err := d.id(ref)
 	if err != nil {
-		return err
+		if os.IsNotExist(err) {
+			// nothing to delete
+			return nil
+		}
+		return errors.E(op, errors.IO, err)
 	}
 	if err := d.files.Delete(id).Do(); err != nil {
 		return errors.E(op, errors.IO, err)
 	}
+	d.cache.Remove(ref)
 	return nil
 }
 
 // id returns the file ID of the first file found under the given name.
 func (d *driveImpl) id(name string) (string, error) {
-	const op = "cloud/storage/drive.id"
-	// Try to avoid hitting the HTTP API if possible.
+	// try cache first
 	if id, ok := d.cache.Get(name); ok {
 		return id.(string), nil
 	}
@@ -138,10 +156,10 @@ func (d *driveImpl) id(name string) (string, error) {
 	call := d.files.List().Spaces("appDataFolder").Q(q).Fields("files(id)")
 	r, err := call.Do()
 	if err != nil {
-		return "", errors.E(op, errors.IO, err)
+		return "", err
 	}
 	if len(r.Files) == 0 {
-		return "", errors.E(op, errors.NotExist)
+		return "", &os.PathError{Op: "List", Path: name, Err: os.ErrNotExist}
 	}
 	// In Drive it is possible that multiple files share the same name under distinct
 	// IDs. It is the responsibility of the Storage user to assure that this collision
