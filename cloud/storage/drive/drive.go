@@ -26,7 +26,7 @@ func init() {
 // Since it only maps file names to file IDs, 500 should be affordable to any server.
 //
 // TODO(gbbr): Make this optionally configurable via command line.
-const LRUSize = 500
+const LRUSize = 60
 
 // ErrTokenOpts is returned when options are missing from the storage configuration
 var ErrTokenOpts = errors.Errorf("one or more required options are missing, need: accessToken, tokenType, refreshToken, expiry")
