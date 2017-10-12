@@ -34,16 +34,19 @@ var ErrTokenOpts = errors.Errorf("one or more required options are missing, need
 // New initializes a new Storage which stores data to Google Drive.
 func New(o *storage.Opts) (storage.Storage, error) {
 	const op = "cloud/storage/drive.New"
-	var a, t, r, e string
-	ok := true
-	a, ok = o.Opts["accessToken"]
-	t, ok = o.Opts["tokenType"]
-	r, ok = o.Opts["refreshToken"]
-	e, ok = o.Opts["expiry"]
+	a, ok := o.Opts["accessToken"]
 	if !ok {
 		return nil, errors.E(op, errors.Internal, ErrTokenOpts)
 	}
-	et, err := time.Parse(time.RFC3339, e)
+	t, ok := o.Opts["tokenType"]
+	if !ok {
+		return nil, errors.E(op, errors.Internal, ErrTokenOpts)
+	}
+	r, ok := o.Opts["refreshToken"]
+	if !ok {
+		return nil, errors.E(op, errors.Internal, ErrTokenOpts)
+	}
+	e, err := time.Parse(time.RFC3339, o.Opts["expiry"])
 	if err != nil {
 		return nil, errors.E(op, errors.Internal, errors.Errorf("couldn't parse expiry: ", err))
 	}
@@ -52,7 +55,7 @@ func New(o *storage.Opts) (storage.Storage, error) {
 		AccessToken:  a,
 		TokenType:    t,
 		RefreshToken: r,
-		Expiry:       et,
+		Expiry:       e,
 	})
 	svc, err := drive.New(client)
 	if err != nil {
