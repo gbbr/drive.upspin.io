@@ -165,10 +165,6 @@ func (d *driveImpl) fileId(name string) (string, error) {
 	if len(r.Files) == 0 {
 		return "", os.ErrNotExist
 	}
-	// In Drive it is possible that multiple files share the same name under distinct
-	// IDs. It is the responsibility of the Storage user to assure that this collision
-	// doesn't happen by using unique ref names. The default implementation uses SHA256
-	// hashes of the content which ensure uniqueness.
 	id := r.Files[0].Id
 	d.cache.Add(name, id)
 	return id, nil
