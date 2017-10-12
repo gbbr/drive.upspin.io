@@ -95,7 +95,8 @@ and -refresh-token flags for OAuth authentication. Skipping for now...
 }
 
 func (d *driveImpl) cleanup() error {
-	call := d.files.List().Spaces("appDataFolder").Q("name='test-file-'").Fields("files(id, name)")
+	q := "name contains 'test-file-'"
+	call := d.files.List().Spaces("appDataFolder").Q(q).Fields("files(id, name)")
 	r, err := call.Do()
 	if err != nil {
 		return err
