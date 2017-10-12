@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"upspin.io/cloud/storage"
+	"upspin.io/errors"
 	"upspin.io/log"
 )
 
@@ -48,6 +49,13 @@ func TestDelete(t *testing.T) {
 	err = client.Delete(fileName)
 	if err != nil {
 		t.Fatalf("Expected no errors, got %v", err)
+	}
+	_, err = client.Download(fileName)
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if e, ok := err.(*errors.Error); ok && e.Kind != errors.NotExist {
+		t.Fatalf("expected NotExist error, got %v", e)
 	}
 }
 
