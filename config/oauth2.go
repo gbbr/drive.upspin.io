@@ -7,7 +7,6 @@ import (
 	"google.golang.org/api/drive/v3"
 )
 
-// TODO: This needs to live somewhere else (shouldn't be exposed in source code).
 var OAuth2 = &oauth2.Config{
 	ClientID:     "756365541666-dbbsja2vlrl38j0r85f32cgl3sj6n8k9.apps.googleusercontent.com",
 	ClientSecret: "RfAusHn6sSN7YO2pErac0ggs",
